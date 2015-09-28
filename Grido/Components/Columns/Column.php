@@ -320,6 +320,9 @@ abstract class Column extends \Grido\Components\Base
     public function renderExport($row)
     {
         $value = $this->getValue($row);
+        if( strpos($value, "\n") !== false) {
+        	$value = '"' . $value . '"';
+        }
         return strip_tags($this->applyReplacement($value));
     }
 
