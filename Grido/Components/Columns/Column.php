@@ -319,8 +319,9 @@ abstract class Column extends \Grido\Components\Base
      */
     public function renderExport($row)
     {
-        $value = $this->getValue($row);
-        if( strpos($value, "\n") !== false) {
+        //change double quotes inside the text to single quotes as double quotes cause unexpected line break in MS Excel
+        $value = str_replace('"', "'", $this->getValue($row));
+        if(strpos($value, "\n") !== false) {
         	$value = '"' . $value . '"';
         }
         return strip_tags($this->applyReplacement($value));
