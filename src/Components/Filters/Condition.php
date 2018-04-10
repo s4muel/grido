@@ -11,6 +11,7 @@
 
 namespace Grido\Components\Filters;
 
+use Nette\SmartObject;
 use Grido\Exception;
 
 /**
@@ -25,8 +26,10 @@ use Grido\Exception;
  * @property mixed $value
  * @property-read callable $callback
  */
-class Condition extends \Nette\Object
+class Condition
 {
+    use SmartObject;
+    
     const OPERATOR_OR = 'OR';
     const OPERATOR_AND = 'AND';
 

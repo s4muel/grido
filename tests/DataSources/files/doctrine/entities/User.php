@@ -2,7 +2,7 @@
 
 namespace Grido\Tests\Entities;
 
-use Nette\Object;
+use Nette;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -16,6 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class User extends Object
 {
+    use Nette\SmartObject;
     /**
      * @var int
      * @ORM\Id
