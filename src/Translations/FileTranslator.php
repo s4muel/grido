@@ -20,16 +20,18 @@ use Grido\Exception;
  * @subpackage  Translations
  * @author      Petr Bugyík
  */
-class FileTranslator extends \Nette\Object implements \Nette\Localization\ITranslator
+class FileTranslator implements \Nette\Localization\ITranslator
 {
+    use \Nette\SmartObject;
+    
     /** @var array */
-    protected $translations = array();
+    protected $translations = [];
 
     /**
      * @param string $lang
      * @param array $translations
      */
-    public function __construct($lang = 'en', array $translations = array())
+    public function __construct($lang = 'en', array $translations = [])
     {
         $translations = $translations + $this->getTranslationsFromFile($lang);
         $this->translations = $translations;
@@ -51,11 +53,12 @@ class FileTranslator extends \Nette\Object implements \Nette\Localization\ITrans
      */
     protected function getTranslationsFromFile($lang)
     {
-        if (!$translations = @include (__DIR__ . "/$lang.php")) {
+        $filename = __DIR__ . "/$lang.php";
+        if (!file_exists($filename)) {
             throw new Exception("Translations for language '$lang' not found.");
         }
 
-        return $translations;
+        return include ($filename);
     }
 
     /************************* interface \Nette\Localization\ITranslator **************************/

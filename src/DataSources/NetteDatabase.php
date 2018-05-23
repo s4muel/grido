@@ -25,8 +25,10 @@ use Grido\Components\Filters\Condition;
  * @property-read int $count
  * @property-read array $data
  */
-class NetteDatabase extends \Nette\Object implements IDataSource
+class NetteDatabase implements IDataSource
 {
+    use \Nette\SmartObject;
+    
     /** @var \Nette\Database\Table\Selection */
     protected $selection;
 
@@ -57,9 +59,9 @@ class NetteDatabase extends \Nette\Object implements IDataSource
             : $selection;
 
         if ($condition->callback) {
-            callback($condition->callback)->invokeArgs(array($condition->value, $selection));
+            call_user_func_array($condition->callback, [$condition->value, $selection]);
         } else {
-            call_user_func_array(array($selection, 'where'), $condition->__toArray());
+            call_user_func_array([$selection, 'where'], $condition->__toArray());
         }
     }
 
@@ -75,7 +77,7 @@ class NetteDatabase extends \Nette\Object implements IDataSource
     public function update($id, array $values, $idCol)
     {
         return (bool) $this->getSelection()
-            ->where(array($idCol => $id)) //TODO: column escaping requires https://github.com/nette/nette/issues/1324
+            ->where('?name = ?', $idCol, $id)
             ->update($values);
     }
 
@@ -88,7 +90,7 @@ class NetteDatabase extends \Nette\Object implements IDataSource
     public function getRow($id, $idCol)
     {
         return $this->getSelection()
-            ->where(array($idCol => $id)) //TODO: column escaping requires https://github.com/nette/nette/issues/1324
+            ->where('?name = ?', $idCol, $id)
             ->fetch();
     }
 
@@ -156,7 +158,7 @@ class NetteDatabase extends \Nette\Object implements IDataSource
             $this->makeWhere($condition, $selection);
         }
 
-        $items = array();
+        $items = [];
         foreach ($selection as $row) {
             if (is_string($column)) {
                 $value = (string) $row[$column];
@@ -167,7 +169,7 @@ class NetteDatabase extends \Nette\Object implements IDataSource
                 throw new Exception("Column of suggestion must be string or callback, $type given.");
             }
 
-            $items[$value] = \Nette\Templating\Helpers::escapeHtml($value);
+            $items[$value] = \Latte\Runtime\Filters::escapeHtml($value);
         }
 
         is_callable($column) && sort($items);

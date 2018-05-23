@@ -13,6 +13,7 @@ namespace Grido\Components;
 
 use Grido\Grid;
 use Grido\Helpers;
+use Grido\Exception;
 
 /**
  * Operation with one or more rows.
@@ -45,15 +46,14 @@ class Operation extends Component
         $grid->addComponent($this, self::ID);
 
         $grid['form'][$grid::BUTTONS]->addSubmit(self::ID, 'OK')
-            ->onClick[] = callback($this, 'handleOperations');
+            ->onClick[] = [$this, 'handleOperations'];
 
         $grid['form']->addContainer(self::ID)
             ->addSelect(self::ID, 'Selected', $operations)
             ->setPrompt('Grido.Selected');
 
-        $that = $this;
-        $grid->onRender[] = function(Grid $grid) use ($that) {
-            $that->addCheckers($grid['form'][Operation::ID]);
+        $grid->onRender[] = function(Grid $grid) {
+            $this->addCheckers($grid['form'][Operation::ID]);
         };
 
         $this->onSubmit[] = $onSubmit;
@@ -69,7 +69,9 @@ class Operation extends Component
     {
         $message = $this->translate($message);
         $this->grid->onRender[] = function(Grid $grid) use ($operation, $message) {
-            $grid['form'][Operation::ID][Operation::ID]->controlPrototype->data["grido-confirm-$operation"] = $message;
+            $grid['form'][Operation::ID][Operation::ID]->getControlPrototype()->setAttribute(
+                "data-grido-confirm-$operation", $message
+            );
         };
 
         return $this;
@@ -109,7 +111,7 @@ class Operation extends Component
     public function handleOperations(\Nette\Forms\Controls\SubmitButton $button)
     {
         $grid = $this->getGrid();
-        $grid->onRegistered && $grid->onRegistered($grid);
+        !empty($grid->onRegistered) && $grid->onRegistered($grid);
         $form = $button->getForm();
         $this->addCheckers($form[self::ID]);
 
@@ -123,7 +125,7 @@ class Operation extends Component
             $grid->reload();
         }
 
-        $ids = array();
+        $ids = [];
         $operation = $values[self::ID];
         unset($values[self::ID]);
 
@@ -134,10 +136,19 @@ class Operation extends Component
         }
 
         $this->onSubmit($operation, $ids);
+        $grid->page = 1;
+
+        if ($this->presenter->isAjax()) {
+            $grid['form'][self::ID][self::ID]->setValue(NULL);
+            $grid->getData(TRUE, FALSE);
+        }
+
+        $grid->reload();
     }
 
     /**
      * @param \Nette\Forms\Container $container
+     * @throws Exception
      * @internal
      */
     public function addCheckers(\Nette\Forms\Container $container)
@@ -146,10 +157,17 @@ class Operation extends Component
         $primaryKey = $this->getPrimaryKey();
 
         foreach ($items as $item) {
-            $primaryValue = $this->grid->getProperty($item, $primaryKey);
-            if (!isset($container[$primaryValue])) {
-                $container->addCheckbox(Helpers::formatColumnName($primaryValue))
-                    ->controlPrototype->title = $primaryValue;
+            try {
+                $primaryValue = $this->grid->getProperty($item, $primaryKey);
+                if (!isset($container[$primaryValue])) {
+                    $container->addCheckbox(Helpers::formatColumnName($primaryValue))
+                        ->controlPrototype->title = $primaryValue;
+                }
+            } catch (\Exception $e) {
+                throw new Exception(
+                    'You should define some else primary key via $grid->setPrimaryKey() '.
+                    "because currently defined '$primaryKey' key is not suitable for operation feature."
+                );
             }
         }
     }
