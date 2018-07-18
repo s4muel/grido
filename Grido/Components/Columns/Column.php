@@ -353,10 +353,18 @@ abstract class Column extends \Grido\Components\Base
     public function renderExport($row)
     {
         if (is_callable($this->customRenderExport)) {
-            return callback($this->customRenderExport)->invokeArgs(array($row));
+            $value = callback($this->customRenderExport)->invokeArgs(array($row));
+        }
+        else {
+            $value = $this->getValue($row);
         }
 
-        $value = $this->getValue($row);
+        //change double quotes inside the text to single quotes as double quotes cause unexpected line break in MS Excel
+        $value = str_replace('"', "'", $value);
+        if (strpos($value, "\n") !== false) {
+            $value = '"' . $value . '"';
+        }
+
         return strip_tags($this->applyReplacement($value));
     }
 
